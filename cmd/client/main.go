@@ -42,6 +42,12 @@ func main() {
 		}
 		fmt.Println("Friendly Fire:", r.FriendlyFire)
 		fmt.Printf("Active Players: %d out of %d\n", len(r.ConnectedPlayerNames), r.MaxPlayers)
+		for i := 0; i < len(r.ConnectedPlayerNames); i++ {
+			fmt.Printf("- %s (Kills: %d, Ping: %dms)\n",
+				r.ConnectedPlayerNames[i],
+				r.ConnectedPlayerKills[i],
+				r.ConnectedPlayerLatencies[i])
+		}
 		fmt.Println()
 	}
 }
