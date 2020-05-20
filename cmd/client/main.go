@@ -1,4 +1,3 @@
-
 package main
 
 import (
@@ -7,6 +6,8 @@ import (
 	"log"
 	"strconv"
 	"strings"
+
+	beacon "github.com/ijemafe/openrvs-beacon"
 )
 
 func main() {
