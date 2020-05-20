@@ -24,41 +24,50 @@ var (
 
 // serverReport is the response object for the server beacon.
 type serverReport struct {
-	IPAddress                string
-	Port                     int
-	CurrentMap               string
-	Name                     string
-	CurrentMode              string
-	MaxPlayers               int
-	Locked                   bool
-	Dedicated                bool
+
+	// Server settings.
+
+	ServerName     string
+	IPAddress      string
+	Port           int
+	BeaconPort     int
+	InternetServer bool
+	Dedicated      bool
+	Locked         bool
+	MaxPlayers     int
+	GameVersion    string
+	ModName        string
+
+	// Game settings.
+
+	AIBackup                 bool
+	AutoTeamBalance          bool
+	BombTimer                int
+	ConnectedPlayerKills     []int
+	ConnectedPlayerLatencies []int
 	ConnectedPlayerNames     []string
 	ConnectedPlayerTimes     []string
-	ConnectedPlayerLatencies []int
-	ConnectedPlayerKills     []int
-	GameMode                 string
-	RoundsPerMatch           int
-	TimePerRound             int
-	TimeBetweenRounds        int
-	BombTimer                int
-	TeamNamesVisible         bool
-	InternetServer           bool
-	FriendlyFire             bool
-	AutoTeamBalance          bool
-	TeamkillPenalty          bool
-	GameVersion              string
-	RadarAllowed             bool
-	UnknownE2                int // Unknown (E2). Appears to always be set to 0.
-	UnknownF2                int // Unknown (F2). Appears to always be set to 0.
-	BeaconPort               int
-	NumTerrorists            int
-	AIBackup                 bool
-	RotateMapOnSuccess       bool
+	CurrentMap               string
+	CurrentMode              string
 	ForceFirstPerson         bool
-	ModName                  string
-	UnknownL3                int // Unknown (L3). Appears to always be set to 0.
+	FriendlyFire             bool
+	GameMode                 string
 	MapRotation              []string
 	ModeRotation             []string
+	NumTerrorists            int
+	RadarAllowed             bool
+	RotateMapOnSuccess       bool
+	RoundsPerMatch           int
+	TeamNamesVisible         bool
+	TeamkillPenalty          bool
+	TimeBetweenRounds        int
+	TimePerRound             int
+
+	// Unknown settings.
+
+	UnknownE2 int // Unknown (E2). Appears to always be set to 0.
+	UnknownF2 int // Unknown (F2). Appears to always be set to 0.
+	UnknownL3 int // Unknown (L3). Appears to always be set to 0.
 }
 
 // server is an endpoint for us to check.
@@ -74,9 +83,7 @@ func main() {
 	}
 
 	for _, s := range servers {
-		queryPort := s.Port + 1000
-		log.Printf("Querying %s:%d", s.IP, s.Port)
-		b, err := getServerReport(s.IP, queryPort)
+		b, err := getServerReport(s.IP, s.Port+1000)
 		if err != nil {
 			log.Println("failed to read from server:", err)
 			fmt.Println()
@@ -90,7 +97,7 @@ func main() {
 			continue
 		}
 
-		fmt.Println("Server:", r.Name)
+		fmt.Println("Server:", r.ServerName)
 		fmt.Printf("Address: %s:%d\n", r.IPAddress, r.Port)
 		fmt.Println("Game Version:", r.GameVersion)
 		fmt.Println("Mod Name:", r.ModName)
@@ -170,7 +177,7 @@ func parseServerReport(ip string, report []byte) (*serverReport, error) {
 		case "E1":
 			r.CurrentMap = value
 		case "I1":
-			r.Name = value
+			r.ServerName = value
 		case "F1":
 			r.CurrentMode = value
 		case "A1":
