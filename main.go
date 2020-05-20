@@ -144,12 +144,12 @@ func GetServerReport(ip string, port int) ([]byte, error) {
 	if _, err = conn.Write([]byte("REPORT")); err != nil {
 		return nil, err
 	}
-	buf := make([]byte, 65536)
+	buf := make([]byte, 4096) // Most responses are under 512 bytes.
 	conn.SetReadDeadline(time.Now().Add(timeout))
 	if _, err = conn.Read(buf); err != nil {
 		return nil, err
 	}
-	b, err := bytes.Trim(buf, "\x00"), nil // 477 bytes remain.
+	b, err := bytes.Trim(buf, "\x00"), nil
 	if err != nil {
 		return nil, err
 	}
