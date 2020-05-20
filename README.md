@@ -2,7 +2,9 @@
 
 Client for the OpenRVS Beacon Server
 
-## example output
+## example client
+
+There is an example of using this library in `cmd/client/main.go` which reads from a local list of server addresses. The output for each server looks like this:
 
 ```
 Server: Classic Maps T-Hunt
