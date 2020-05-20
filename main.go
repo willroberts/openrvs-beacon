@@ -82,14 +82,14 @@ func main() {
 	}
 
 	for _, s := range servers {
-		b, err := getServerReport(s.IP, s.Port+1000)
+		b, err := GetServerReport(s.IP, s.Port+1000)
 		if err != nil {
 			log.Println("failed to read from server:", err)
 			fmt.Println()
 			continue
 		}
 
-		r, err := parseServerReport(s.IP, b)
+		r, err := ParseServerReport(s.IP, b)
 		if err != nil {
 			log.Println("failed to parse report:", err)
 			fmt.Println()
@@ -135,8 +135,8 @@ func readServerList() ([]server, error) {
 	return servers, nil
 }
 
-// getServerReport handles the UDP connection to the server's beacon port.
-func getServerReport(ip string, port int) ([]byte, error) {
+// GetServerReport handles the UDP connection to the server's beacon port.
+func GetServerReport(ip string, port int) ([]byte, error) {
 	conn, err := net.DialUDP("udp4", nil, &net.UDPAddr{IP: net.ParseIP(ip), Port: port})
 	if err != nil {
 		return nil, err
@@ -156,8 +156,8 @@ func getServerReport(ip string, port int) ([]byte, error) {
 	return b, nil
 }
 
-// parseServerReport reads the bytestream from the game server and parses it into a serverResponse object.
-func parseServerReport(ip string, report []byte) (*serverReport, error) {
+// ParseServerReport reads the bytestream from the game server and parses it into a serverResponse object.
+func ParseServerReport(ip string, report []byte) (*serverReport, error) {
 	r := &serverReport{IPAddress: ip}
 	for _, line := range bytes.Split(report, []byte{sep}) {
 		// Skip the header line, no useful info to parse.
