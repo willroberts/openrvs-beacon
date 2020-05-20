@@ -23,16 +23,21 @@ type ServerReport struct {
 
 	// Server settings.
 
-	ServerName     string
-	IPAddress      string
-	Port           int
-	BeaconPort     int
-	InternetServer bool
-	Dedicated      bool
-	Locked         bool
-	MaxPlayers     int
-	GameVersion    string
-	ModName        string
+	ServerName        string
+	IPAddress         string
+	Port              int
+	BeaconPort        int
+	InternetServer    bool
+	Dedicated         bool
+	PunkbusterEnabled bool
+	Locked            bool
+	MaxPlayers        int
+	NumPlayers        int
+	GameVersion       string
+	ModName           string
+	OptionsList       string // The beacon does not seem to return this value.
+	LobbyServerID     int    // Ubisoft-specific. Always 0.
+	GroupID           int    // Ubisoft-specific. Always 0.
 
 	// Game settings.
 
@@ -47,7 +52,6 @@ type ServerReport struct {
 	CurrentMode              string
 	ForceFirstPerson         bool
 	FriendlyFire             bool
-	GameMode                 string
 	MapRotation              []string
 	ModeRotation             []string
 	NumTerrorists            int
@@ -58,11 +62,6 @@ type ServerReport struct {
 	TeamkillPenalty          bool
 	TimeBetweenRounds        int
 	TimePerRound             int
-
-	// Unknown settings.
-	//UnknownE2 int // Unknown (E2). Appears to always be set to 0.
-	//UnknownF2 int // Unknown (F2). Appears to always be set to 0.
-	//UnknownL3 int // Unknown (L3). Appears to always be set to 0.
 }
 
 // Server is an endpoint for us to check.
@@ -107,16 +106,15 @@ func ParseServerReport(ip string, report []byte) (*ServerReport, error) {
 		// Case statements can be brittle, but there's no risk of this code changing.
 		var err error
 		switch key {
-		case "P1":
-			r.Port, err = strconv.Atoi(value)
-		case "E1":
-			r.CurrentMap = value
-		case "I1":
-			r.ServerName = value
-		case "F1":
-			r.CurrentMode = value
 		case "A1":
 			r.MaxPlayers, err = strconv.Atoi(value)
+		case "B1":
+			r.NumPlayers, err = strconv.Atoi(value)
+		// No C1 or D1.
+		case "E1":
+			r.CurrentMap = value
+		case "F1":
+			r.CurrentMode = value
 		case "G1":
 			if value == enabled {
 				r.Locked = true
@@ -125,6 +123,19 @@ func ParseServerReport(ip string, report []byte) (*ServerReport, error) {
 			if value == enabled {
 				r.Dedicated = true
 			}
+		case "I1":
+			r.ServerName = value
+		case "J1":
+			// ModeRotation includes "/" separators for every slot, not every mode. Omit empty values.
+			modes := make([]string, 0)
+			for _, m := range strings.Split(value, "/")[1:] {
+				if m != "" {
+					modes = append(modes, m)
+				}
+			}
+			r.ModeRotation = modes
+		case "K1":
+			r.MapRotation = strings.Split(value, "/")[1:]
 		case "L1":
 			r.ConnectedPlayerNames = strings.Split(value, "/")[1:]
 		case "M1":
@@ -153,12 +164,8 @@ func ParseServerReport(ip string, report []byte) (*ServerReport, error) {
 				out[i] = v
 			}
 			r.ConnectedPlayerKills = out
-		case "B1":
-			if value == enabled {
-				r.GameMode = "coop"
-				break
-			}
-			r.GameMode = "adver"
+		case "P1":
+			r.Port, err = strconv.Atoi(value)
 		case "Q1":
 			r.RoundsPerMatch, err = strconv.Atoi(value)
 		case "R1":
@@ -167,6 +174,7 @@ func ParseServerReport(ip string, report []byte) (*ServerReport, error) {
 			r.TimeBetweenRounds, err = strconv.Atoi(value)
 		case "T1":
 			r.BombTimer, err = strconv.Atoi(value)
+		// No U1 or V1.
 		case "W1":
 			if value == enabled {
 				r.TeamNamesVisible = true
@@ -187,24 +195,18 @@ func ParseServerReport(ip string, report []byte) (*ServerReport, error) {
 			if value == enabled {
 				r.TeamkillPenalty = true
 			}
-		case "D2":
-			r.GameVersion = value
 		case "B2":
 			if value == enabled {
 				r.RadarAllowed = true
 			}
+		case "C2":
+			r.OptionsList = value
+		case "D2":
+			r.GameVersion = value
 		case "E2":
-			// Unknown field.
-			if value != disabled {
-				log.Println("E2 is nonzero!")
-			}
-			break
+			r.LobbyServerID, err = strconv.Atoi(value)
 		case "F2":
-			// Unknown field.
-			if value != disabled {
-				log.Println("F2 is nonzero!")
-			}
-			break
+			r.GroupID, err = strconv.Atoi(value)
 		case "G2":
 			r.BeaconPort, err = strconv.Atoi(value)
 		case "H2":
@@ -224,22 +226,9 @@ func ParseServerReport(ip string, report []byte) (*ServerReport, error) {
 		case "L2":
 			r.ModName = value
 		case "L3":
-			// Unknown field.
-			if value != disabled {
-				log.Println("L3 is nonzero!")
+			if value == enabled {
+				r.PunkbusterEnabled = true
 			}
-			break
-		case "K1":
-			r.MapRotation = strings.Split(value, "/")[1:]
-		case "J1":
-			// ModeRotation includes "/" separators for every slot, not every mode. Omit empty values.
-			modes := make([]string, 0)
-			for _, m := range strings.Split(value, "/")[1:] {
-				if m != "" {
-					modes = append(modes, m)
-				}
-			}
-			r.ModeRotation = modes
 		default:
 			log.Println("unknown key:", key)
 			break
