@@ -64,10 +64,9 @@ type serverReport struct {
 	TimePerRound             int
 
 	// Unknown settings.
-
-	UnknownE2 int // Unknown (E2). Appears to always be set to 0.
-	UnknownF2 int // Unknown (F2). Appears to always be set to 0.
-	UnknownL3 int // Unknown (L3). Appears to always be set to 0.
+	//UnknownE2 int // Unknown (E2). Appears to always be set to 0.
+	//UnknownF2 int // Unknown (F2). Appears to always be set to 0.
+	//UnknownL3 int // Unknown (L3). Appears to always be set to 0.
 }
 
 // server is an endpoint for us to check.
@@ -169,7 +168,7 @@ func parseServerReport(ip string, report []byte) (*serverReport, error) {
 		key := string(line[0:2])
 		value := string(bytes.Trim(line[3:], "\x20"))
 
-		// Case statements are brittle, but there's no risk of this code changing.
+		// Case statements can be brittle, but there's no risk of this code changing.
 		var err error
 		switch key {
 		case "P1":
