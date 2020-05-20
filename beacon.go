@@ -2,8 +2,6 @@ package main
 
 import (
 	"bytes"
-	"fmt"
-	"io/ioutil"
 	"log"
 	"net"
 	"strconv"
@@ -18,12 +16,10 @@ const (
 	disabled = "0"
 )
 
-var (
-	timeout = 3 * time.Second // Time to wait for beacon response before moving on.
-)
+var timeout = 3 * time.Second // Time to wait for beacon response before moving on.
 
-// serverReport is the response object from the game server's beacon port.
-type serverReport struct {
+// ServerReport is the response object from the game server's beacon port.
+type ServerReport struct {
 
 	// Server settings.
 
@@ -69,70 +65,10 @@ type serverReport struct {
 	//UnknownL3 int // Unknown (L3). Appears to always be set to 0.
 }
 
-// server is an endpoint for us to check.
-type server struct {
+// Server is an endpoint for us to check.
+type Server struct {
 	IP   string
 	Port int // This is the GAME SERVER port.
-}
-
-func main() {
-	servers, err := readServerList()
-	if err != nil {
-		log.Fatal("failed to read server list:", err)
-	}
-
-	for _, s := range servers {
-		b, err := GetServerReport(s.IP, s.Port+1000)
-		if err != nil {
-			log.Println("failed to read from server:", err)
-			fmt.Println()
-			continue
-		}
-
-		r, err := ParseServerReport(s.IP, b)
-		if err != nil {
-			log.Println("failed to parse report:", err)
-			fmt.Println()
-			continue
-		}
-
-		fmt.Println("Server:", r.ServerName)
-		fmt.Printf("Address: %s:%d\n", r.IPAddress, r.Port)
-		fmt.Println("Game Version:", r.GameVersion)
-		fmt.Println("Mod Name:", r.ModName)
-		fmt.Println("Current Map:", r.CurrentMap)
-		fmt.Println("Current Game Mode:", r.CurrentMode)
-		if r.NumTerrorists > 0 {
-			fmt.Println("Number of Terrorists:", r.NumTerrorists)
-		}
-		fmt.Println("Friendly Fire:", r.FriendlyFire)
-		fmt.Printf("Active Players: %d out of %d\n", len(r.ConnectedPlayerNames), r.MaxPlayers)
-		fmt.Println()
-	}
-}
-
-// readServerList checks serverlist.example and parses the contents. This text was copied from RVSGaming.org.
-func readServerList() ([]server, error) {
-	b, err := ioutil.ReadFile("servers.example")
-	if err != nil {
-		return nil, err
-	}
-	var servers []server
-
-	lines := strings.Split(string(b), "\n")
-	for _, line := range lines {
-		fields := strings.Fields(line)
-		port, err := strconv.Atoi(fields[1])
-		if err != nil {
-			return nil, err
-		}
-		servers = append(servers, server{
-			IP:   fields[0],
-			Port: port,
-		})
-	}
-
-	return servers, nil
 }
 
 // GetServerReport handles the UDP connection to the server's beacon port.
