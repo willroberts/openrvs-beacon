@@ -93,8 +93,8 @@ func GetServerReport(ip string, port int) ([]byte, error) {
 }
 
 // ParseServerReport reads the bytestream from the game server and parses it into a serverResponse object.
-func ParseServerReport(ip string, report []byte) (*serverReport, error) {
-	r := &serverReport{IPAddress: ip}
+func ParseServerReport(ip string, report []byte) (*ServerReport, error) {
+	r := &ServerReport{IPAddress: ip}
 	for _, line := range bytes.Split(report, []byte{sep}) {
 		// Skip the header line, no useful info to parse.
 		if strings.HasPrefix(string(line), header) {
