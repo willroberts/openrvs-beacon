@@ -22,7 +22,7 @@ var (
 	timeout = 3 * time.Second // Time to wait for beacon response before moving on.
 )
 
-// serverReport is the response object for the server beacon.
+// serverReport is the response object from the game server's beacon port.
 type serverReport struct {
 
 	// Server settings.
