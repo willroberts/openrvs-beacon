@@ -62,6 +62,10 @@ type ServerReport struct {
 	TeamkillPenalty          bool
 	TimeBetweenRounds        int
 	TimePerRound             int
+
+	// OpenRVS custom fields.
+
+	MOTD string
 }
 
 // Server is an endpoint for us to check.
@@ -229,6 +233,9 @@ func ParseServerReport(ip string, report []byte) (*ServerReport, error) {
 			if value == enabled {
 				r.PunkbusterEnabled = true
 			}
+		// O2 and above are OpenRVS custom fields.
+		case "O2":
+			r.MOTD = value
 		default:
 			log.Println("unknown key:", key)
 			break
