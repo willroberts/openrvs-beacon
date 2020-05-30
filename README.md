@@ -1,6 +1,6 @@
 # openrvs-beacon
 
-Client for the OpenRVS Beacon Server
+Library and client for the OpenRVS Beacon Server
 
 ## example client
 
