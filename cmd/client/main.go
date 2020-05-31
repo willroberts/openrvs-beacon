@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	beacon "github.com/ijemafe/openrvs-beacon"
 )
@@ -29,7 +30,7 @@ func main() {
 	for _, s := range servers {
 		wg.Add(1)
 		go func(s server) {
-			b, err := beacon.GetServerReport(s.IP, s.Port+1000)
+			b, err := beacon.GetServerReport(s.IP, s.Port+1000, 3*time.Second)
 			if err != nil {
 				errs <- err
 				wg.Done()

@@ -16,8 +16,6 @@ const (
 	disabled = "0"
 )
 
-var timeout = 3 * time.Second // Time to wait for beacon response before moving on.
-
 // ServerReport is the response object from the game server's beacon port.
 type ServerReport struct {
 
@@ -69,7 +67,7 @@ type ServerReport struct {
 }
 
 // GetServerReport handles the UDP connection to the server's beacon port.
-func GetServerReport(ip string, port int) ([]byte, error) {
+func GetServerReport(ip string, port int, timeout time.Duration) ([]byte, error) {
 	conn, err := net.DialUDP("udp4", nil, &net.UDPAddr{IP: net.ParseIP(ip), Port: port})
 	if err != nil {
 		return nil, err
