@@ -30,14 +30,7 @@ func main() {
 	for _, s := range servers {
 		wg.Add(1)
 		go func(s server) {
-			b, err := beacon.GetServerReport(s.IP, s.Port+1000, 3*time.Second)
-			if err != nil {
-				errs <- err
-				wg.Done()
-				return
-			}
-
-			r, err := beacon.ParseServerReport(s.IP, b)
+			r, err := beacon.GetServerReport(s.IP, s.Port+1000, 5*time.Second)
 			if err != nil {
 				errs <- err
 				wg.Done()
