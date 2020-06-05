@@ -66,8 +66,9 @@ type ServerReport struct {
 	MOTD string
 }
 
-// GetServerReport handles the UDP connection to the server's beacon port.
-func GetServerReport(ip string, port int, timeout time.Duration) ([]byte, error) {
+// GetServerReport handles the UDP connection to the server's beacon port and
+// parses the response as type ServerReport.
+func GetServerReport(ip string, port int, timeout time.Duration) (*ServerReport, error) {
 	conn, err := net.DialUDP("udp4", nil, &net.UDPAddr{IP: net.ParseIP(ip), Port: port})
 	if err != nil {
 		return nil, err
@@ -84,13 +85,9 @@ func GetServerReport(ip string, port int, timeout time.Duration) ([]byte, error)
 	if err != nil {
 		return nil, err
 	}
-	return b, nil
-}
 
-// ParseServerReport reads the bytestream from the game server and parses it into a serverResponse object.
-func ParseServerReport(ip string, report []byte) (*ServerReport, error) {
 	r := &ServerReport{IPAddress: ip}
-	for _, line := range bytes.Split(report, []byte{sep}) {
+	for _, line := range bytes.Split(b, []byte{sep}) {
 		// Skip the header line, no useful info to parse.
 		if strings.HasPrefix(string(line), header) {
 			continue
