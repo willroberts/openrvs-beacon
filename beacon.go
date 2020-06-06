@@ -97,7 +97,14 @@ func ParseServerReport(ip string, report []byte) (*ServerReport, error) {
 		}
 
 		key := string(line[0:2])
-		value := string(bytes.Trim(line[3:], "\x20"))
+		// Value bytes can sometimes lose valid encoding when converting to
+		// string. Take special care to retain UTF-8 characters by converting
+		// one byte at a time.
+		valueBytes := bytes.Trim(line[3:], "\x20")
+		value := ""
+		for _, b := range valueBytes {
+			value += string(b)
+		}
 
 		// Case statements can be brittle, but there's no risk of this code changing.
 		var err error
