@@ -72,11 +72,12 @@ func GetServerReport(ip string, port int, timeout time.Duration) ([]byte, error)
 	if err != nil {
 		return nil, err
 	}
+	defer conn.Close()
 	if _, err = conn.Write([]byte("REPORT")); err != nil {
 		return nil, err
 	}
-	buf := make([]byte, 4096) // Most responses are under 512 bytes.
 	conn.SetReadDeadline(time.Now().Add(timeout))
+	buf := make([]byte, 4096) // Most responses are under 2048 bytes.
 	if _, err = conn.Read(buf); err != nil {
 		return nil, err
 	}
