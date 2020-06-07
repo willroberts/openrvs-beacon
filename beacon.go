@@ -2,6 +2,7 @@ package beacon
 
 import (
 	"bytes"
+	"fmt"
 	"log"
 	"net"
 	"strconv"
@@ -10,11 +11,14 @@ import (
 )
 
 const (
-	sep      = '¶'       // "Pilcrow Sign". Red Storm used this as a field separator.
-	header   = "rvnshld" // Start of header line in UDP response.
-	enabled  = "1"
-	disabled = "0"
+	BeaconBufferSize = 4096      // Most responses are under 2048 bytes, data loss begins at 1023.
+	sep              = '¶'       // "Pilcrow Sign". Red Storm used this as a field separator.
+	header           = "rvnshld" // Start of header line in UDP response.
+	enabled          = "1"
+	disabled         = "0"
 )
+
+var ErrNotABeacon = fmt.Errorf("error: response was not an openrvs beacon")
 
 // ServerReport is the response object from the game server's beacon port.
 type ServerReport struct {
@@ -68,27 +72,41 @@ type ServerReport struct {
 
 // GetServerReport handles the UDP connection to the server's beacon port.
 func GetServerReport(ip string, port int, timeout time.Duration) ([]byte, error) {
+	// "Connect" to the remote UDP port.
 	conn, err := net.DialUDP("udp4", nil, &net.UDPAddr{IP: net.ParseIP(ip), Port: port})
 	if err != nil {
 		return nil, err
 	}
 	defer conn.Close()
+
+	// Send a REPORT request.
+	conn.SetReadDeadline(time.Now().Add(timeout))
 	if _, err = conn.Write([]byte("REPORT")); err != nil {
 		return nil, err
 	}
-	conn.SetReadDeadline(time.Now().Add(timeout))
-	buf := make([]byte, 4096) // Most responses are under 2048 bytes.
+
+	// Try to read the REPORT response into a buffer.
+	buf := make([]byte, BeaconBufferSize) // Most responses are under 2048 bytes.
 	if _, err = conn.Read(buf); err != nil {
 		return nil, err
 	}
+
+	// Validate the response.
+	if !bytes.HasPrefix(buf, []byte(header)) {
+		return nil, ErrNotABeacon
+	}
+
+	// Remove empty bytes from the end of the buffer.
 	b, err := bytes.Trim(buf, "\x00"), nil
 	if err != nil {
 		return nil, err
 	}
+
 	return b, nil
 }
 
-// ParseServerReport reads the bytestream from the game server and parses it into a serverResponse object.
+// ParseServerReport reads the bytestream from the game server and parses it
+// into a serverResponse object.
 func ParseServerReport(ip string, report []byte) (*ServerReport, error) {
 	r := &ServerReport{IPAddress: ip}
 	for _, line := range bytes.Split(report, []byte{sep}) {
@@ -97,10 +115,14 @@ func ParseServerReport(ip string, report []byte) (*ServerReport, error) {
 			continue
 		}
 
-		key := string(line[0:2])
-		// Value bytes can sometimes lose valid encoding when converting to
-		// string. Take special care to retain UTF-8 characters by converting
-		// one byte at a time.
+		// These two iterations convert ASCII bytes to UTF-8. If we do something
+		// like string(keyBytes) instead, non-ASCII character will be converted
+		// into '�'.
+		keyBytes := line[0:2]
+		key := ""
+		for _, b := range keyBytes {
+			key += string(b)
+		}
 		valueBytes := bytes.Trim(line[3:], "\x20")
 		value := ""
 		for _, b := range valueBytes {
@@ -130,14 +152,22 @@ func ParseServerReport(ip string, report []byte) (*ServerReport, error) {
 		case "I1":
 			r.ServerName = value
 		case "J1":
-			// ModeRotation includes "/" separators for every slot, not every mode. Omit empty values.
+			// ModeRotation always includes 32 "/" separators, not just one for
+			// each mode. Omit empty strings from ModeRotation.
 			modes := make([]string, 0)
-			for _, m := range strings.Split(value, "/")[1:] {
+			fields := strings.Split(value, "/")
+			for _, m := range fields[1:] {
 				if m != "" {
 					modes = append(modes, m)
 				}
 			}
 			r.ModeRotation = modes
+			// Note: Mode rotation is the last thing to arrive over UDP. If it
+			// is missing any placeholder '/' characters, data loss occurred.
+			if len(fields)-1 != 32 && r.Port != 0 {
+				log.Printf("warning: data loss occurred for server %s:%d (received %d bytes)",
+					ip, r.Port, len(report))
+			}
 		case "K1":
 			r.MapRotation = strings.Split(value, "/")[1:]
 		case "L1":
