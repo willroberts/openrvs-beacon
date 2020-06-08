@@ -10,41 +10,42 @@
 // to string values.
 //
 // The UDP beacon structure looks like this (in exact order of appearance):
-// - Port (4-5 bytes)
-// - Map Name (up to 32 bytes)
-// - Server Name (up to 32 bytes)
-// - Current Game Mode (15-25 bytes)
-// - Maximum Players (2 bytes)
-// - Locked? (1 byte)
-// - Dedicated? (1 byte)
-// - Player Names (0 or 20-320 bytes for 1-16 players)
-// - Player Times (0 or 5-80 bytes for 1-16 players)
-// - Player Pings (0 or 5-80 bytes for 1-16 players)
-// - Player Kills (0 or 4-64 bytes for 1-16 players)
-// - Current Players (2 bytes)
-// - Rounds Per Match (2 bytes, more above 99)
-// - Time Per Round (4 bytes, more above 2.75 hours)
-// - Time Between Rounds (2 bytes, more above 1m39s)
-// - Bomb Timer (2 bytes, more above 1m39s)
-// - Team Names Visible? (1 byte)
-// - Internet Server? (1 byte)
-// - Friendly Fire? (1 byte)
-// - Auto Team Balance? (1 byte)
-// - Teamkill Penalty? (1 byte)
-// - Game Version: (22-32 bytes)
-// - Radar Allowed? (1 byte)
-// - Lobby Server ID (1 byte)
-// - Group ID (1 byte)
-// - Beacon Port (4-5 bytes)
-// - Num Terrorists (2 bytes)
-// - AI Backup? (1 byte)
-// - Rotate Map? (1 byte)
-// - Force First Person? (1 byte)
-// - Mod Name (9-12 bytes)
-// - Punkbuster? (1 byte)
-// - Map Rotation (10-831 bytes for 1-32 maps)
-// - Mode Rotation (47-832 bytes for 1-32 modes)
-// - MOTD (up to 60 bytes, only in OpenRVS 1.5+)
+//
+//     - Port (4-5 bytes)
+//     - Map Name (up to 32 bytes)
+//     - Server Name (up to 32 bytes)
+//     - Current Game Mode (15-25 bytes)
+//     - Maximum Players (2 bytes)
+//     - Locked? (1 byte)
+//     - Dedicated? (1 byte)
+//     - Player Names (0 or 20-320 bytes for 1-16 players)
+//     - Player Times (0 or 5-80 bytes for 1-16 players)
+//     - Player Pings (0 or 5-80 bytes for 1-16 players)
+//     - Player Kills (0 or 4-64 bytes for 1-16 players)
+//     - Current Players (2 bytes)
+//     - Rounds Per Match (2 bytes, more above 99)
+//     - Time Per Round (4 bytes, more above 2.75 hours)
+//     - Time Between Rounds (2 bytes, more above 1m39s)
+//     - Bomb Timer (2 bytes, more above 1m39s)
+//     - Team Names Visible? (1 byte)
+//     - Internet Server? (1 byte)
+//     - Friendly Fire? (1 byte)
+//     - Auto Team Balance? (1 byte)
+//     - Teamkill Penalty? (1 byte)
+//     - Game Version: (22-32 bytes)
+//     - Radar Allowed? (1 byte)
+//     - Lobby Server ID (1 byte)
+//     - Group ID (1 byte)
+//     - Beacon Port (4-5 bytes)
+//     - Num Terrorists (2 bytes)
+//     - AI Backup? (1 byte)
+//     - Rotate Map? (1 byte)
+//     - Force First Person? (1 byte)
+//     - Mod Name (9-12 bytes)
+//     - Punkbuster? (1 byte)
+//     - Map Rotation (10-831 bytes for 1-32 maps)
+//     - Mode Rotation (47-832 bytes for 1-32 modes)
+//     - MOTD (up to 60 bytes, only in OpenRVS 1.5+)
 //
 // Each component is preceded by a 3-byte marker. Overall, without the map and
 // mode rotations, and with no players connected, a server should be able to fit
@@ -75,13 +76,14 @@ import (
 )
 
 const (
-	BeaconBufferSize = 4096      // Most responses are under 2048 bytes, data loss begins at 1023.
+	beaconBufferSize = 4096      // 4kb. Most responses are under 2kb, data loss begins at 1kb.
 	sep              = '¶'       // "Pilcrow Sign". Red Storm used this as a field separator.
 	header           = "rvnshld" // Start of header line in UDP response.
 	enabled          = "1"
 	disabled         = "0"
 )
 
+// ErrNotABeacon indicates a valid UDP response which is not from OpenRVS.
 var ErrNotABeacon = fmt.Errorf("error: response was not an openrvs beacon")
 
 // ServerReport is the response object from the game server's beacon port.
@@ -134,7 +136,8 @@ type ServerReport struct {
 	MOTD string
 }
 
-// GetServerReport handles the UDP connection to the server's beacon port.
+// GetServerReport handles the UDP connection to the server's beacon port and
+// retrieves the report bytes.
 func GetServerReport(ip string, port int, timeout time.Duration) ([]byte, error) {
 	// "Connect" to the remote UDP port.
 	conn, err := net.DialUDP("udp4", nil, &net.UDPAddr{IP: net.ParseIP(ip), Port: port})
@@ -150,7 +153,7 @@ func GetServerReport(ip string, port int, timeout time.Duration) ([]byte, error)
 	}
 
 	// Try to read the REPORT response into a buffer.
-	buf := make([]byte, BeaconBufferSize) // Most responses are under 2048 bytes.
+	buf := make([]byte, beaconBufferSize) // Most responses are under 2048 bytes.
 	if _, err = conn.Read(buf); err != nil {
 		return nil, err
 	}
@@ -170,7 +173,7 @@ func GetServerReport(ip string, port int, timeout time.Duration) ([]byte, error)
 }
 
 // ParseServerReport reads the bytestream from the game server and parses it
-// into a serverResponse object.
+// into a ServerReport.
 func ParseServerReport(ip string, report []byte) (*ServerReport, error) {
 	r := &ServerReport{IPAddress: ip}
 	for _, line := range bytes.Split(report, []byte{sep}) {
