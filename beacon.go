@@ -1,3 +1,63 @@
+// Package beacon provides a library for interacting with a Rainbow Six 3: Raven
+// Shield game server.
+//
+// Raven Shield game servers communicate with UDP for all purposes. Servers
+// listen on UDP ports for clients, clients join games with UDP, and there is
+// communication between clients and servers over UDP as well. The format used
+// in this communication is called a "beacon". A beacon is a stream of text
+// separated by named markers containing pilcrow (¶) signs. Each segment follows
+// a specific marker, so the format is similar to a map of string keys to string
+// values.
+//
+// The UDP beacon structure looks like this (in exact order of appearance):
+// - Port (4-5 bytes)
+// - Map Name (up to 32 bytes)
+// - Server Name (up to 32 bytes)
+// - Current Game Mode (15-25 bytes)
+// - Maximum Players (2 bytes)
+// - Locked? (1 byte)
+// - Dedicated? (1 byte)
+// - Player Names (up to 20 bytes per player)
+// - Player Times (5 bytes per player)
+// - Player Pings (up to 5 bytes per player)
+// - Player Kills (up to 4 bytes per player)
+// - Current Players (2 bytes)
+// - Rounds Per Match (2 bytes, more above 99)
+// - Time Per Round (4 bytes, more above 2.75 hours)
+// - Time Between Rounds (2 bytes, more above 1m39s)
+// - Bomb Timer (2 bytes, more above 1m39s)
+// - Team Names Visible? (1 byte)
+// - Internet Server? (1 byte)
+// - Friendly Fire? (1 byte)
+// - Auto Team Balance? (1 byte)
+// - Teamkill Penalty? (1 byte)
+// - Game Version: (22-32 bytes)
+// - Radar Allowed? (1 byte)
+// - Lobby Server ID (1 byte)
+// - Group ID (1 byte)
+// - Beacon Port (4-5 bytes)
+// - Num Terrorists (2 bytes)
+// - AI Backup? (1 byte)
+// - Rotate Map? (1 byte)
+// - Force First Person? (1 byte)
+// - Mod Name (9-12 bytes)
+// - Punkbuster? (1 byte)
+// - Map Rotation (10-831 bytes for 1-32 maps)
+// - Mode Rotation (47-832 bytes for 1-32 modes)
+// - MOTD (up to 60 bytes, only in OpenRVS 1.5+)
+//
+// A server with one map in the rotation, no connected players, and no MOTD
+// sends around 225 bytes of data without including markers. There are 34 (or 35
+// in OpenRVS 1.5) markers each consisting of 3 bytes, for an additional 102
+// bytes (new total 327).
+//
+// With 32 maps in the rotation, 16 connected players, and a maximum-length
+// MOTD, the beacon text can reach up to 2,440 bytes in length.
+//
+// Depending on the network and OS this code runs on, UDP data loss may occur at
+// different points. The safe limit is generally 512 bytes, and data loss could
+// occur at higher values. When this data loss occurs, game modes are trimmed
+// from the Mode Rotation (and the MOTD if present).
 package beacon
 
 import (
@@ -116,7 +176,7 @@ func ParseServerReport(ip string, report []byte) (*ServerReport, error) {
 		}
 
 		// These two iterations convert ASCII bytes to UTF-8. If we do something
-		// like string(keyBytes) instead, non-ASCII character will be converted
+		// like string(keyBytes) instead, non-ASCII characters will be converted
 		// into '�'.
 		keyBytes := line[0:2]
 		key := ""
