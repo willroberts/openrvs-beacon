@@ -2,9 +2,14 @@
 
 Library and client for the OpenRVS Beacon Server
 
-## example client
+## Documentation
 
-There is an example of using this library in `cmd/client/main.go` which reads from a local list of server addresses. The output for each server looks like this:
+Complete documentation can be found [here](https://godoc.org/github.com/willroberts/openrvs-beacon)
+
+## Example client
+
+There is an example of using this library in the `cmd/client` directory which reads from a local list of server addresses.
+The output for each server looks like this:
 
 ```
 Server: ALLR6 | Original Maps Only
