@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	beacon "github.com/ijemafe/openrvs-beacon"
+	beacon "github.com/willroberts/openrvs-beacon"
 )
 
 type server struct {

@@ -11,7 +11,7 @@ import (
 	"strconv"
 	"time"
 
-	beacon "github.com/ijemafe/openrvs-beacon"
+	beacon "github.com/willroberts/openrvs-beacon"
 )
 
 type Input struct {
