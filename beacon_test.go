@@ -8,7 +8,7 @@ import (
 var (
 	// TODO: Use fixtures.
 	testHost    = "64.225.54.237"
-	testPort    = 6776
+	testPort    = 6776 + 1000 // Beacon port, not game server port!
 	testTimeout = 5 * time.Second
 )
 

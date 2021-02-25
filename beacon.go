@@ -137,7 +137,9 @@ type ServerReport struct {
 }
 
 // GetServerReport handles the UDP connection to the server's beacon port and
-// retrieves the report bytes.
+// retrieves the report bytes. Note that the port in question is the beacon port
+// and not the game server port. The beacon port is typically the gamer server
+// port plus 1000.
 func GetServerReport(ip string, port int, timeout time.Duration) ([]byte, error) {
 	// "Connect" to the remote UDP port.
 	conn, err := net.DialUDP("udp4", nil, &net.UDPAddr{IP: net.ParseIP(ip), Port: port})
