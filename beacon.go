@@ -192,6 +192,10 @@ func ParseServerReport(ip string, report []byte) (*ServerReport, error) {
 		for _, b := range keyBytes {
 			key += string(b)
 		}
+		// A valid line must contain both key and value.
+		if len(line) < 3 {
+			continue
+		}
 		valueBytes := bytes.Trim(line[3:], "\x20")
 		value := ""
 		for _, b := range valueBytes {
