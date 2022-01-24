@@ -8,13 +8,13 @@ import (
 )
 
 var (
-	testPort    = 7776
-	testTimeout = 5 * time.Second
+	testIntegHost = "64.225.54.237" // openrvs.org
+	testPort      = 7776            // Classic Maps Terrorist Hunt Server
+	testTimeout   = 5 * time.Second
 )
 
 func TestGetBeacon(t *testing.T) {
-	_, err := GetServerReport(testHost, testPort, testTimeout)
-	if err != nil {
+	if _, err := GetServerReport(testIntegHost, testPort, testTimeout); err != nil {
 		t.Fatal(err)
 	}
 }
