@@ -67,7 +67,6 @@ package beacon
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"log"
 	"strconv"
@@ -76,11 +75,14 @@ import (
 )
 
 const (
-	beaconBufferSize = 4096      // 4kb. Most responses are under 2kb, data loss begins at 1kb.
-	sep              = '¶'       // "Pilcrow Sign". Red Storm used this as a field separator.
-	beaconHeader     = "rvnshld" // Start of header line in UDP response.
-	enabled          = "1"
-	disabled         = "0"
+	beaconBufferSize  = 4096 // 4kb. Most responses are under 2kb, data loss begins at 1kb.
+	minimumReportSize = 128  // High enough to avoid invalid data, but lower than actual values (320+).
+
+	sep          = '¶'       // "Pilcrow Sign". Red Storm used this as a field separator.
+	beaconHeader = "rvnshld" // Start of header line in UDP response.
+
+	enabled  = "1"
+	disabled = "0"
 )
 
 // ErrNotABeacon indicates a valid UDP response which is not from OpenRVS.
@@ -154,6 +156,9 @@ func GetServerReport(ip string, port int, timeout time.Duration) ([]byte, error)
 }
 
 func validateServerReport(report []byte) error {
+	if len(report) < minimumReportSize {
+		return ErrNotABeacon
+	}
 	if !bytes.HasPrefix(report, []byte(beaconHeader)) {
 		return ErrNotABeacon
 	}
@@ -164,9 +169,6 @@ func validateServerReport(report []byte) error {
 // into a ServerReport.
 func ParseServerReport(ip string, report []byte) (*ServerReport, error) {
 	r := &ServerReport{IPAddress: ip}
-	if len(report) < 320 { // valid report size?
-		return r, errors.New("report too small")
-	}
 	for _, line := range bytes.Split(report, []byte{sep}) {
 		// Skip the header line, no useful info to parse.
 		if strings.HasPrefix(string(line), beaconHeader) {
