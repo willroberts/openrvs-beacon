@@ -70,7 +70,6 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"net"
 	"strconv"
 	"strings"
 	"time"
@@ -85,44 +84,80 @@ const (
 )
 
 // ErrNotABeacon indicates a valid UDP response which is not from OpenRVS.
-var ErrNotABeacon = fmt.Errorf("error: response was not an openrvs beacon")
+var ErrNotABeacon = fmt.Errorf("error: not a valid openrvs beacon")
 
-// GetServerReport handles the UDP connection to the server's beacon port and
-// retrieves the report bytes. Note that the port in question is the beacon port
-// and not the game server port. The beacon port is typically the gamer server
-// port plus 1000.
-func GetServerReport(ip string, port int, timeout time.Duration) ([]byte, error) {
-	return sendCommandToServer("REPORT", ip, port, timeout)
+// ServerReport is the response object from the game server's beacon port.
+type ServerReport struct {
+
+	// Server settings.
+
+	ServerName        string
+	IPAddress         string
+	Port              int
+	BeaconPort        int
+	InternetServer    bool
+	Dedicated         bool
+	PunkbusterEnabled bool
+	Locked            bool
+	MaxPlayers        int
+	NumPlayers        int
+	GameVersion       string
+	ModName           string
+	OptionsList       string // The beacon does not seem to return this value.
+	LobbyServerID     int    // Ubisoft-specific. Always 0.
+	GroupID           int    // Ubisoft-specific. Always 0.
+
+	// Game settings.
+
+	AIBackup                 bool
+	AutoTeamBalance          bool
+	BombTimer                int
+	ConnectedPlayerKills     []int
+	ConnectedPlayerLatencies []int
+	ConnectedPlayerNames     []string
+	ConnectedPlayerTimes     []string
+	CurrentMap               string
+	CurrentMode              string
+	ForceFirstPerson         bool
+	FriendlyFire             bool
+	MapRotation              []string
+	ModeRotation             []string
+	NumTerrorists            int
+	RadarAllowed             bool
+	RotateMapOnSuccess       bool
+	RoundsPerMatch           int
+	TeamNamesVisible         bool
+	TeamkillPenalty          bool
+	TimeBetweenRounds        int
+	TimePerRound             int
+
+	// OpenRVS custom fields.
+
+	MOTD string
 }
 
-func sendCommandToServer(command string, ip string, port int, timeout time.Duration) ([]byte, error) {
-	// Connect.
-	conn, err := net.DialUDP("udp4", nil, &net.UDPAddr{IP: net.ParseIP(ip), Port: port})
+// GetServerReport will send "REPORT" over UDP to the given server and return the response bytes.
+// If the response does not have a 'rvnshld' header, ErrNotABeacon will be returned.
+// NOTE: The port in question is the beacon port and not the game server port. The beacon port is typically the game
+// server port plus 1000.
+func GetServerReport(ip string, port int, timeout time.Duration) ([]byte, error) {
+	b, err := sendUDP("REPORT", ip, port, timeout)
 	if err != nil {
 		return []byte{}, err
 	}
-	defer conn.Close()
 
-	// Send the command.
-	conn.SetWriteDeadline(time.Now().Add(timeout))
-	if _, err = conn.Write([]byte(command)); err != nil {
-		return nil, err
+	if err := validateServerReport(b); err != nil {
+		return []byte{}, err
 	}
 
-	// Read the response.
-	buf := make([]byte, beaconBufferSize)
-	conn.SetReadDeadline(time.Now().Add(timeout))
-	n, err := conn.Read(buf)
-	if err != nil {
-		return nil, err
-	}
+	return b, nil
+}
 
-	// Validate the response.
-	if !bytes.HasPrefix(buf, []byte(beaconHeader)) {
-		return nil, ErrNotABeacon
+func validateServerReport(report []byte) error {
+	if !bytes.HasPrefix(report, []byte(beaconHeader)) {
+		return ErrNotABeacon
 	}
-
-	return buf[n:], nil
+	return nil
 }
 
 // ParseServerReport reads the bytestream from the game server and parses it
