@@ -83,7 +83,7 @@ const (
 )
 
 // ErrNotABeacon indicates a valid UDP response which is not from OpenRVS.
-var ErrNotABeacon = errors.New("error: not a valid openrvs beacon")
+var ErrNotABeacon = errors.New("not a valid openrvs beacon")
 
 // GetServerReport will send "REPORT" over UDP to the given server and return the response bytes.
 // If the response does not have a 'rvnshld' header, ErrNotABeacon will be returned.
