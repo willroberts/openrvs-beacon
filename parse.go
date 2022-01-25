@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-const minimumLineSize = 4 // 2 for key, 1 for space, 1 for value
+const minimumLineSize = 2 // Based on key size; value can be empty.
 
 var ErrInvalidLine = errors.New("invalid report line")
 
@@ -27,22 +27,22 @@ func lineToKeyVal(line []byte) (string, string) {
 	return key, val
 }
 
-// ParseServerReport reads the bytestream from the game server and parses it
-// into a ServerReport.
+// ParseServerReport parses the bytes from the game server into a ServerReport.
 func ParseServerReport(ip string, report []byte) (*ServerReport, error) {
 	r := &ServerReport{IPAddress: ip}
-	for _, line := range bytes.Split(report, []byte{sep}) {
+	lines := bytes.Split(report, []byte{pilcrow})
+
+	// Skip the first line containing the header.
+	for _, line := range lines[1:] {
 		if err := validateLine(line); err != nil {
 			return r, err
 		}
 
-		// Skip the header line, no useful info to parse.
-		if strings.HasPrefix(string(line), beaconHeader) {
+		// Parse the key and value. If there is no value, do nothing.
+		key, value := lineToKeyVal(line)
+		if len(value) == 0 {
 			continue
 		}
-
-		// Parse the key and value.
-		key, value := lineToKeyVal(line)
 
 		// Decide which action to take based on the key.
 		// Case statements can be brittle, but there's no risk of this code changing.
