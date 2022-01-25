@@ -68,40 +68,20 @@ func ParseServerReport(ip string, report []byte) (*ServerReport, error) {
 			// Unlike the Map Rotation, the Mode Rotation always includes 32 fields, regardless of
 			// how many actually contain values. Each field is prefixed with '/'.
 			modes := make([]string, 0)
-			fields := strings.Split(value, "/")
-			if len(fields) < 1 {
-				break
-			}
-			for _, m := range fields[1:] {
+			for _, m := range strings.Split(value, "/")[1:] {
 				if m != "" {
 					modes = append(modes, m)
 				}
 			}
 			r.ModeRotation = modes
 		case "K1":
-			fields := strings.Split(value, "/")
-			if len(fields) < 1 {
-				break
-			}
-			r.MapRotation = fields[1:]
+			r.MapRotation = strings.Split(value, "/")[1:]
 		case "L1":
-			fields := strings.Split(value, "/")
-			if len(fields) < 1 {
-				break
-			}
-			r.ConnectedPlayerNames = fields[1:]
+			r.ConnectedPlayerNames = strings.Split(value, "/")[1:]
 		case "M1":
-			fields := strings.Split(value, "/")
-			if len(fields) < 1 {
-				break
-			}
-			r.ConnectedPlayerTimes = fields[1:]
+			r.ConnectedPlayerTimes = strings.Split(value, "/")[1:]
 		case "N1":
-			in := strings.Split(value, "/")
-			if len(in) < 1 {
-				break
-			}
-			in = in[1:]
+			in := strings.Split(value, "/")[1:]
 			out := make([]int, len(in))
 			for i, l := range in {
 				var v int
@@ -113,11 +93,7 @@ func ParseServerReport(ip string, report []byte) (*ServerReport, error) {
 			}
 			r.ConnectedPlayerLatencies = out
 		case "O1":
-			in := strings.Split(value, "/")
-			if len(in) < 1 {
-				break
-			}
-			in = in[1:]
+			in := strings.Split(value, "/")[1:]
 			out := make([]int, len(in))
 			for i, l := range in {
 				var v int
