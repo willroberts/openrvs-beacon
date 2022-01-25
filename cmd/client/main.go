@@ -1,104 +1,54 @@
 package main
 
 import (
+	"flag"
 	"fmt"
-	"io/ioutil"
 	"log"
-	"strconv"
-	"strings"
-	"sync"
 	"time"
 
 	beacon "github.com/willroberts/openrvs-beacon"
 )
 
-type server struct {
-	IP   string
-	Port int
+var (
+	ip   string
+	port int
+)
+
+func init() {
+	flag.StringVar(&ip, "ip", "127.0.0.1", "IP address of RS3 server")
+	flag.IntVar(&port, "port", 7776, "Beacon port of RS3 server (usually game port + 1000)")
+	flag.Parse()
 }
 
 func main() {
-	servers, err := readServerList()
+	reportBytes, err := beacon.GetServerReport(ip, port, 5*time.Second)
 	if err != nil {
-		log.Fatal("failed to read server list:", err)
+		log.Fatal("failed to read from server:", err)
 	}
-
-	reports := make(chan *beacon.ServerReport, len(servers))
-	errs := make(chan error, len(servers))
-
-	var wg sync.WaitGroup
-	for _, s := range servers {
-		wg.Add(1)
-		go func(s server) {
-			reportBytes, err := beacon.GetServerReport(s.IP, s.Port+1000, 5*time.Second)
-			if err != nil {
-				errs <- err
-				wg.Done()
-				return
-			}
-			report, err := beacon.ParseServerReport(s.IP, reportBytes)
-			if err != nil {
-				errs <- err
-				wg.Done()
-				return
-			}
-			reports <- report
-			wg.Done()
-		}(s)
+	report, err := beacon.ParseServerReport(ip, reportBytes)
+	if err != nil {
+		log.Fatal("failed to parse report:", err)
 	}
-	wg.Wait()
-	close(reports)
-	close(errs)
-
-	for e := range errs {
-		if e != nil {
-			log.Println(e)
-		}
-	}
-
-	for r := range reports {
-		fmt.Println("Server:", r.ServerName)
-		fmt.Printf("Address: %s:%d\n", r.IPAddress, r.Port)
-		fmt.Println("Game Version:", r.GameVersion)
-		fmt.Println("Mod Name:", r.ModName)
-		fmt.Println("MOTD:", r.MOTD)
-		fmt.Println("Current Map:", r.CurrentMap)
-		fmt.Println("Current Game Mode:", r.CurrentMode)
-		if r.NumTerrorists > 0 {
-			fmt.Println("Number of Terrorists:", r.NumTerrorists)
-		}
-		fmt.Println("Friendly Fire:", r.FriendlyFire)
-		fmt.Printf("Active Players: %d out of %d\n", r.NumPlayers, r.MaxPlayers)
-		for i := 0; i < len(r.ConnectedPlayerNames); i++ {
-			fmt.Printf("- %s (Kills: %d, Ping: %dms)\n",
-				r.ConnectedPlayerNames[i],
-				r.ConnectedPlayerKills[i],
-				r.ConnectedPlayerLatencies[i])
-		}
-		fmt.Println()
-	}
+	printReport(report)
 }
 
-// readServerList checks serverlist.example and parses the contents. This text was copied from RVSGaming.org.
-func readServerList() ([]server, error) {
-	b, err := ioutil.ReadFile("servers.example")
-	if err != nil {
-		return nil, err
+func printReport(r *beacon.ServerReport) {
+	fmt.Println("Server:", r.ServerName)
+	fmt.Printf("Address: %s:%d\n", r.IPAddress, r.Port)
+	fmt.Println("Game Version:", r.GameVersion)
+	fmt.Println("Mod Name:", r.ModName)
+	fmt.Println("MOTD:", r.MOTD)
+	fmt.Println("Current Map:", r.CurrentMap)
+	fmt.Println("Current Game Mode:", r.CurrentMode)
+	if r.NumTerrorists > 0 {
+		fmt.Println("Number of Terrorists:", r.NumTerrorists)
 	}
-	var servers []server
-
-	lines := strings.Split(string(b), "\n")
-	for _, line := range lines {
-		fields := strings.Fields(line)
-		port, err := strconv.Atoi(fields[1])
-		if err != nil {
-			return nil, err
-		}
-		servers = append(servers, server{
-			IP:   fields[0],
-			Port: port,
-		})
+	fmt.Println("Friendly Fire:", r.FriendlyFire)
+	fmt.Printf("Active Players: %d out of %d\n", r.NumPlayers, r.MaxPlayers)
+	for i := 0; i < len(r.ConnectedPlayerNames); i++ {
+		fmt.Printf("- %s (Kills: %d, Ping: %dms)\n",
+			r.ConnectedPlayerNames[i],
+			r.ConnectedPlayerKills[i],
+			r.ConnectedPlayerLatencies[i])
 	}
-
-	return servers, nil
 }

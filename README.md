@@ -8,22 +8,18 @@ Complete documentation can be found [here](https://godoc.org/github.com/willrobe
 
 ## Example client
 
-There is an example of using this library in the `cmd/client` directory which reads from a local list of server addresses.
-The output for each server looks like this:
+There is an example of using this library in the `cmd/client` directory:
 
 ```
-Server: ALLR6 | Original Maps Only
-Address: 104.243.46.138:9777
+$ go run main.go -ip 64.225.54.237 -port 7776
+Server: Classic Maps | Terrorist Hunt
+Address: 64.225.54.237:6776
 Game Version: PATCH 1.60 (build 412)
 Mod Name: RavenShield
-Current Map: Mountain_High
+MOTD: 
+Current Map: Streets
 Current Game Mode: RGM_TerroristHuntCoopMode
-Number of Terrorists: 50
-Friendly Fire: true
-Active Players: 5 out of 8
-- (Srgt)ThriceQC (Kills: 3, Ping: 62ms)
-- R6_Pride (Kills: 4, Ping: 94ms)
-- 1 (Kills: 16, Ping: 140ms)
-- SusanSarandonJr (Kills: 0, Ping: 31ms)
-- (Srgt)McAGravQc (Kills: 18, Ping: 46ms)
+Number of Terrorists: 35
+Friendly Fire: false
+Active Players: 0 out of 8
 ```
