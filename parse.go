@@ -46,16 +46,8 @@ func ParseServerReport(ip string, report []byte) (*ServerReport, error) {
 			r.Dedicated = valToBool(value)
 		case "I1":
 			r.ServerName = value
-		case "J1": // Mode Rotation.
-			// Unlike the Map Rotation, the Mode Rotation always includes 32 fields, regardless of
-			// how many actually contain values. Each field is prefixed with '/'.
-			modes := make([]string, 0)
-			for _, m := range strings.Split(value, "/")[1:] {
-				if m != "" {
-					modes = append(modes, m)
-				}
-			}
-			r.ModeRotation = modes
+		case "J1":
+			r.ModeRotation = parseModeRotation(value)
 		case "K1":
 			r.MapRotation = strings.Split(value, "/")[1:]
 		case "L1":
@@ -157,4 +149,16 @@ func valToIntSlice(value string) ([]int, error) {
 
 func valToBool(value string) bool {
 	return value == enabled
+}
+
+// Unlike the Map Rotation, the Mode Rotation always includes 32 fields, regardless of
+// how many actually contain values. Each field is prefixed with '/'.
+func parseModeRotation(value string) []string {
+	modes := make([]string, 0)
+	for _, m := range strings.Split(value, "/")[1:] {
+		if m != "" {
+			modes = append(modes, m)
+		}
+	}
+	return modes
 }
