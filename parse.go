@@ -25,6 +25,20 @@ func lineToKeyVal(line []byte) (string, string) {
 	return key, val
 }
 
+// Some values (kill counts, latencies, etc.) are lists separated by forward slashes.
+// This converts them to slices of integers.
+func valToIntSlice(value string) ([]int, error) {
+	ints := make([]int, strings.Count(value, "/"))
+	for i, strVal := range strings.Split(value, "/")[1:] {
+		intVal, err := strconv.Atoi(strVal)
+		if err != nil {
+			return []int{}, err
+		}
+		ints[i] = intVal
+	}
+	return ints, nil
+}
+
 // ParseServerReport parses the bytes from the game server into a ServerReport.
 func ParseServerReport(ip string, report []byte) (*ServerReport, error) {
 	r := &ServerReport{IPAddress: ip}
@@ -33,7 +47,7 @@ func ParseServerReport(ip string, report []byte) (*ServerReport, error) {
 	// Skip the first line containing the header.
 	for _, line := range lines[1:] {
 		if err := validateLine(line); err != nil {
-			return r, err
+			return &ServerReport{}, err
 		}
 
 		// Parse the key and value. If there is no value, do nothing.
@@ -81,29 +95,17 @@ func ParseServerReport(ip string, report []byte) (*ServerReport, error) {
 		case "M1":
 			r.ConnectedPlayerTimes = strings.Split(value, "/")[1:]
 		case "N1":
-			in := strings.Split(value, "/")[1:]
-			out := make([]int, len(in))
-			for i, l := range in {
-				var v int
-				v, err := strconv.Atoi(l)
-				if err != nil {
-					break
-				}
-				out[i] = v
+			latencies, err := valToIntSlice(value)
+			if err != nil {
+				return &ServerReport{}, err
 			}
-			r.ConnectedPlayerLatencies = out
+			r.ConnectedPlayerLatencies = latencies
 		case "O1":
-			in := strings.Split(value, "/")[1:]
-			out := make([]int, len(in))
-			for i, l := range in {
-				var v int
-				v, err := strconv.Atoi(l)
-				if err != nil {
-					break
-				}
-				out[i] = v
+			kills, err := valToIntSlice(value)
+			if err != nil {
+				return &ServerReport{}, err
 			}
-			r.ConnectedPlayerKills = out
+			r.ConnectedPlayerKills = kills
 		case "P1":
 			r.Port, err = strconv.Atoi(value)
 		case "Q1":
@@ -176,9 +178,9 @@ func ParseServerReport(ip string, report []byte) (*ServerReport, error) {
 			// Unused or invalid key.
 		}
 
-		// Several case statement branches write to err before breaking. Check it now.
+		// Some case statement branches can return an error.
 		if err != nil {
-			return nil, err
+			return &ServerReport{}, err
 		}
 	}
 
