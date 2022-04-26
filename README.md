@@ -1,6 +1,7 @@
 # openrvs-beacon
 
-Library and client for the OpenRVS Beacon Server
+Library and client for the OpenRVS Beacon Server. The beacon protocol is a
+serialized format for transmitting Raven Shield game server data over UDP.
 
 ## Documentation
 
