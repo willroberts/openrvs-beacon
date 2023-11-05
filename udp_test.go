@@ -8,7 +8,7 @@ import (
 )
 
 var (
-	testIntegHost   = "64.225.54.237" // openrvs.org
+	testIntegHost   = "184.73.85.28" // openrvs.org
 	testInvalidHost = "127.0.0.1"
 	testPort        = 7776 // Classic Maps Terrorist Hunt Server
 	testTimeout     = 1 * time.Second
