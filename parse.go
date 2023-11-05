@@ -9,6 +9,7 @@ import (
 
 const keySize = 2
 
+// ErrInvalidLine is returned when a report line is too short to be valid.
 var ErrInvalidLine = errors.New("invalid report line")
 
 // ParseServerReport parses the bytes from the game server into a ServerReport.
